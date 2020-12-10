@@ -7,7 +7,7 @@ using VRC;
 using VRC_MenuOverrender;
 
 [assembly: MelonGame("VRChat", "VRChat")]
-[assembly: MelonInfo(typeof(MenuOverrenderMod), "VRC Menu Overrender", "1.0.0", "Ben")]
+[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.0", "Ben")]
 
 namespace VRC_MenuOverrender
 {
@@ -23,7 +23,7 @@ namespace VRC_MenuOverrender
         private static int _playerLocalLayer;
         private static int _playerLayer;
 
-        private static int _uiPlayerNameplateLayer = 31;
+        private static int _uiPlayerNameplateLayer = 30;
 
         public override void VRChat_OnUiManagerInit()
         {
@@ -45,12 +45,10 @@ namespace VRC_MenuOverrender
 
             MelonLogger.Log("New Mask: " + screenCamera.cullingMask);
 
-            _menuCameraClone = GameObject.Instantiate(screenCamera.gameObject);
-            _menuCameraClone.transform.localPosition = new Vector3(0, 0, 0);
-            _menuCameraClone.transform.localRotation = new Quaternion(0, 0, 0, 0);
-            _menuCameraClone.transform.parent = screenCamera.transform;
+            _menuCameraClone = new GameObject();
+            _menuCameraClone.transform.parent = screenCamera.transform.parent;
 
-            _menuCameraUI = _menuCameraClone.GetComponent<Camera>();
+            _menuCameraUI = _menuCameraClone.AddComponent<Camera>();
             _menuCameraUI.cullingMask =
                 (1 << LayerMask.NameToLayer("UiMenu"))
                 | (1 << LayerMask.NameToLayer("UI"));
@@ -85,6 +83,20 @@ namespace VRC_MenuOverrender
                 prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static)));
         }
 
+        public override void OnUpdate()
+        {
+            if (_menuCameraClone != null)
+            {
+                _menuCameraClone.transform.localPosition = _originalCamera.transform.localPosition;
+
+                if (_menuCameraUI != null)
+                {
+                    _menuCameraUI.nearClipPlane = _originalCamera.nearClipPlane;
+                    _menuCameraUI.farClipPlane = _originalCamera.farClipPlane;
+                }
+            }
+        }
+
         // Switch the nameplate to a new layer (probably a bad idea but fixes the nameplates overrendering the world)
         private static void OnRebuild(PlayerNameplate __instance)
         {
@@ -105,8 +117,21 @@ namespace VRC_MenuOverrender
             }
         }
 
+        private static void OnFade()
+        {
+            if (_menuCameraClone != null)
+            {
+                _menuCameraUI.clearFlags = CameraClearFlags.Depth;
+            }
+        }
+
         public static void SetLayerRecursively(Transform obj, int newLayer, int match)
         {
+            if (obj.gameObject.name.Equals("SelectRegion"))
+            {
+                return;
+            }
+
             if (obj.gameObject.layer == match)
             {
                 obj.gameObject.layer = newLayer;
@@ -116,14 +141,6 @@ namespace VRC_MenuOverrender
             {
                 var otherTransform = o.Cast<Transform>();
                 SetLayerRecursively(otherTransform, newLayer, match);
-            }
-        }
-
-        private static void OnFade()
-        {
-            if (_menuCameraClone != null)
-            {
-                _menuCameraUI.clearFlags = CameraClearFlags.Depth;
             }
         }
     }
