@@ -101,7 +101,7 @@ namespace VRC_MenuOverrender
         private static void OnRebuild(PlayerNameplate __instance)
         {
             if (__instance != null
-                && __instance.transform.parent.parent.gameObject.layer != _uiPlayerNameplateLayer)
+                && __instance.gameObject.layer != _uiPlayerNameplateLayer)
             {
                 SetLayerRecursively(__instance.transform.parent.parent.parent, _uiPlayerNameplateLayer, _uiMenuLayer);
                 SetLayerRecursively(__instance.transform.parent.parent.parent, _uiPlayerNameplateLayer, _uiLayer);
