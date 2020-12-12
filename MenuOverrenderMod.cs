@@ -65,7 +65,7 @@ namespace VRC_MenuOverrender
             SetLayerRecursively(loadingScreenOverlayPanel.transform, _uiMenuLayer, -1);
 
             GameObject userCamera = GameObject.Find("/_Application/TrackingVolume/PlayerObjects/UserCamera");
-            SetLayerRecursively(userCamera.transform, _uiMenuLayer, -1);
+            SetLayerRecursively(userCamera.transform, _playerLocalLayer, -1);
 
             var harmonyInstance = HarmonyInstance.Create("VRC-MenuOverrender");
 
