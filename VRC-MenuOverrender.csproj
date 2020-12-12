@@ -63,6 +63,9 @@
       <HintPath>..\..\..\..\SteamGames\steamapps\common\VRChat\MelonLoader\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="VRCCore-Standalone">
+      <HintPath>..\..\..\..\SteamGames\steamapps\common\VRChat\MelonLoader\Managed\VRCCore-Standalone.dll</HintPath>
+    </Reference>
     <Reference Include="VRCSDKBase">
       <HintPath>..\..\..\..\SteamGames\steamapps\common\VRChat\MelonLoader\Managed\VRCSDKBase.dll</HintPath>
     </Reference>

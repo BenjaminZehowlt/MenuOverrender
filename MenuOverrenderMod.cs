@@ -1,5 +1,6 @@
 ﻿using Harmony;
 using MelonLoader;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -61,11 +62,10 @@ namespace VRC_MenuOverrender
             _playerLayer = LayerMask.NameToLayer("Player");
 
             GameObject loadingScreenOverlayPanel = GameObject.Find("/UserInterface/MenuContent/Popups/LoadingPopup/3DElements/LoadingInfoPanel");
-            
-            foreach (Transform infoPanel in loadingScreenOverlayPanel.transform.GetComponentsInChildren<Transform>())
-            {
-                infoPanel.gameObject.layer = _uiMenuLayer;
-            }
+            SetLayerRecursively(loadingScreenOverlayPanel.transform, _uiMenuLayer, -1);
+
+            GameObject userCamera = GameObject.Find("/_Application/TrackingVolume/PlayerObjects/UserCamera");
+            SetLayerRecursively(userCamera.transform, _uiMenuLayer, -1);
 
             var harmonyInstance = HarmonyInstance.Create("VRC-MenuOverrender");
 
@@ -74,10 +74,9 @@ namespace VRC_MenuOverrender
                 .Where(m => m.Name.Contains("Method_Public_Void_Single_Action") && !m.Name.Contains("PDM")).First(),
                 postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnFade", BindingFlags.Static | BindingFlags.NonPublic)));
 
-            harmonyInstance.Patch(
-                typeof(SimpleAvatarPedestal).GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(m => m.Name.Contains("Method_Private_Void_GameObject")).First(),
-                postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnAvatarScale", BindingFlags.Static | BindingFlags.NonPublic)));
+            typeof(SimpleAvatarPedestal).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(m => m.Name.Contains("Method_Private_Void_GameObject"))
+                .ToList().ForEach(m => harmonyInstance.Patch(m, postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnAvatarScale", BindingFlags.Static | BindingFlags.NonPublic))));
 
             harmonyInstance.Patch(typeof(PlayerNameplate).GetMethod("Method_Public_Void_0", BindingFlags.Public | BindingFlags.Instance), 
                 prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static)));
@@ -113,7 +112,14 @@ namespace VRC_MenuOverrender
         {
             if (__instance != null && __0 != null)
             {
-                SetLayerRecursively(__0.transform, _uiMenuLayer, _playerLocalLayer);
+                if (__0.transform.parent.gameObject.name.Equals("AvatarModel"))
+                {
+                    SetLayerRecursively(__0.transform.parent, _uiMenuLayer, _playerLocalLayer);
+                }
+                else
+                {
+                    SetLayerRecursively(__0.transform, _uiMenuLayer, _playerLocalLayer);
+                }
             }
         }
 
@@ -132,7 +138,7 @@ namespace VRC_MenuOverrender
                 return;
             }
 
-            if (obj.gameObject.layer == match)
+            if (obj.gameObject.layer == match || match == -1)
             {
                 obj.gameObject.layer = newLayer;
             }
