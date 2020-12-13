@@ -8,7 +8,7 @@ using VRC;
 using VRC_MenuOverrender;
 
 [assembly: MelonGame("VRChat", "VRChat")]
-[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.1", "Ben")]
+[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.4", "Ben")]
 
 namespace VRC_MenuOverrender
 {
