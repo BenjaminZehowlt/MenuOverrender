@@ -15,6 +15,10 @@ namespace VRC_MenuOverrender
     public class MenuOverrenderMod : MelonMod
     {
 
+        private static int _originalCullingMask;
+        private static int _newCullingMask;
+        private static bool _overrenderEnabled;
+
         private static GameObject _menuCameraClone;
         private static Camera _menuCameraUI;
         private static Camera _originalCamera;
@@ -28,6 +32,8 @@ namespace VRC_MenuOverrender
 
         public override void VRChat_OnUiManagerInit()
         {
+            MelonPrefs.RegisterBool("MenuOverrender", nameof(_overrenderEnabled), true, "Menu Overrender Enabled");
+
             VRCVrCamera vrCamera = VRCVrCamera.field_Private_Static_VRCVrCamera_0;
             if (!vrCamera)
                 return;
@@ -37,14 +43,16 @@ namespace VRC_MenuOverrender
 
             _originalCamera = screenCamera;
 
-            MelonLogger.Log("Current Mask: " + screenCamera.cullingMask);
+            MelonLogger.Log("Current Culling Mask: " + screenCamera.cullingMask);
+            _originalCullingMask = screenCamera.cullingMask;
 
             screenCamera.cullingMask = screenCamera.cullingMask
                 & ~(1 << LayerMask.NameToLayer("UiMenu"))
                 & ~(1 << LayerMask.NameToLayer("UI"));
             screenCamera.cullingMask = screenCamera.cullingMask | (1 << _uiPlayerNameplateLayer);
 
-            MelonLogger.Log("New Mask: " + screenCamera.cullingMask);
+            MelonLogger.Log("New Culling Mask: " + screenCamera.cullingMask);
+            _newCullingMask = screenCamera.cullingMask;
 
             _menuCameraClone = new GameObject();
             _menuCameraClone.transform.parent = screenCamera.transform.parent;
@@ -81,11 +89,13 @@ namespace VRC_MenuOverrender
 
             harmonyInstance.Patch(typeof(PlayerNameplate).GetMethod("Method_Public_Void_0", BindingFlags.Public | BindingFlags.Instance), 
                 prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static)));
+
+            OnModSettingsApplied();
         }
 
         public override void OnUpdate()
         {
-            if (_menuCameraClone != null)
+            if (_menuCameraClone != null && _menuCameraClone.activeSelf)
             {
                 _menuCameraClone.transform.localPosition = _originalCamera.transform.localPosition;
 
@@ -97,10 +107,18 @@ namespace VRC_MenuOverrender
             }
         }
 
+        public override void OnModSettingsApplied()
+        {
+            _overrenderEnabled = MelonPrefs.GetBool("MenuOverrender", nameof(_overrenderEnabled));
+
+            _menuCameraClone.SetActive(_overrenderEnabled);
+            _originalCamera.cullingMask = (_overrenderEnabled ? _newCullingMask : _originalCullingMask);
+        }
+
         // Switch the nameplate to a new layer (probably a bad idea but fixes the nameplates overrendering the world)
         private static void OnRebuild(PlayerNameplate __instance)
         {
-            if (__instance != null
+            if (_overrenderEnabled && __instance != null
                 && __instance.gameObject.layer != _uiPlayerNameplateLayer)
             {
                 SetLayerRecursively(__instance.transform.parent.parent.parent, _uiPlayerNameplateLayer, _uiMenuLayer);
@@ -111,7 +129,7 @@ namespace VRC_MenuOverrender
         // Make the avatar render on the menu not behind it
         private static void OnAvatarScale(ref SimpleAvatarPedestal __instance, GameObject __0)
         {
-            if (__instance != null && __0 != null)
+            if (_overrenderEnabled && __instance != null && __0 != null)
             {
                 if (__0.transform.parent.gameObject.name.Equals("AvatarModel"))
                 {
