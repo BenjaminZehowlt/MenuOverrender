@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 using VRC;
 using VRC_MenuOverrender;
 
 [assembly: MelonGame("VRChat", "VRChat")]
-[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.4", "Ben")]
+[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.5", "Ben")]
 
 namespace VRC_MenuOverrender
 {
@@ -147,6 +148,10 @@ namespace VRC_MenuOverrender
             if (_menuCameraClone != null)
             {
                 _menuCameraUI.clearFlags = CameraClearFlags.Depth;
+
+                // Thanks for DDAkebono for mentioning this was a cause for an issue
+                foreach (PostProcessLayer postProcessLayer in _menuCameraClone.GetComponents<PostProcessLayer>())
+                    GameObject.Destroy(postProcessLayer);
             }
         }
 
