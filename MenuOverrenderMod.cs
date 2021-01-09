@@ -3,6 +3,7 @@ using MelonLoader;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using VRC;
@@ -30,6 +31,10 @@ namespace VRC_MenuOverrender
         private static int _playerLayer;
 
         private static int _uiPlayerNameplateLayer = 30;
+
+
+        // Taken from BTKSANameplateFix
+        private Regex methodMatchRegex = new Regex("Method_Public_Void_\\d", RegexOptions.Compiled);
 
         public override void VRChat_OnUiManagerInit()
         {
@@ -88,8 +93,9 @@ namespace VRC_MenuOverrender
                 .Where(m => m.Name.Contains("Method_Private_Void_GameObject"))
                 .ToList().ForEach(m => harmonyInstance.Patch(m, postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnAvatarScale", BindingFlags.Static | BindingFlags.NonPublic))));
 
-            harmonyInstance.Patch(typeof(PlayerNameplate).GetMethod("Method_Public_Void_0", BindingFlags.Public | BindingFlags.Instance), 
-                prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static)));
+            typeof(PlayerNameplate).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(m => methodMatchRegex.IsMatch(m.Name))
+                .ToList().ForEach(m => harmonyInstance.Patch(m, prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static))));
 
             OnModSettingsApplied();
         }
