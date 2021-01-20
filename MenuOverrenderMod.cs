@@ -10,7 +10,7 @@ using VRC;
 using VRC_MenuOverrender;
 
 [assembly: MelonGame("VRChat", "VRChat")]
-[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.7", "Ben")]
+[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.8", "Ben")]
 
 namespace VRC_MenuOverrender
 {
@@ -84,10 +84,11 @@ namespace VRC_MenuOverrender
 
             var harmonyInstance = HarmonyInstance.Create("VRC-MenuOverrender");
 
-            harmonyInstance.Patch(
-                typeof(VRCUiBackgroundFade).GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(m => m.Name.Contains("Method_Public_Void_Single_Action") && !m.Name.Contains("PDM")).First(),
-                postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnFade", BindingFlags.Static | BindingFlags.NonPublic)));
+            typeof(VRCUiBackgroundFade).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+               .Where(m => m.Name.Contains("Method_Public_Void_Single_Action") && !m.Name.Contains("PDM"))
+               .ToList().ForEach(m => harmonyInstance.Patch(m, postfix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnFade", BindingFlags.Static | BindingFlags.NonPublic))));
+
+            
 
             typeof(SimpleAvatarPedestal).GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(m => m.Name.Contains("Method_Private_Void_GameObject"))
