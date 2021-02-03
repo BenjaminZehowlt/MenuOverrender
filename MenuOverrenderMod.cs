@@ -10,7 +10,7 @@ using VRC;
 using VRC_MenuOverrender;
 
 [assembly: MelonGame("VRChat", "VRChat")]
-[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.0.8", "Ben")]
+[assembly: MelonInfo(typeof(MenuOverrenderMod), "MenuOverrender", "1.1.0", "Ben")]
 
 namespace VRC_MenuOverrender
 {
@@ -38,18 +38,19 @@ namespace VRC_MenuOverrender
 
         public override void VRChat_OnUiManagerInit()
         {
-            MelonPrefs.RegisterBool("MenuOverrender", nameof(_overrenderEnabled), true, "Menu Overrender Enabled");
+            MelonPreferences_Category prefCat = MelonPreferences.CreateCategory("MenuOverrender", "MenuOverrender");
+            prefCat.CreateEntry(nameof(_overrenderEnabled), true, "Menu Overrender Enabled");
 
             VRCVrCamera vrCamera = VRCVrCamera.field_Private_Static_VRCVrCamera_0;
             if (!vrCamera)
                 return;
-            Camera screenCamera = vrCamera.screenCamera;
+            Camera screenCamera = vrCamera.field_Public_Camera_0;
             if (!screenCamera)
                 return;
 
             _originalCamera = screenCamera;
 
-            MelonLogger.Log("Current Culling Mask: " + screenCamera.cullingMask);
+            MelonLogger.Msg("Current Culling Mask: " + screenCamera.cullingMask);
             _originalCullingMask = screenCamera.cullingMask;
 
             screenCamera.cullingMask = screenCamera.cullingMask
@@ -57,7 +58,7 @@ namespace VRC_MenuOverrender
                 & ~(1 << LayerMask.NameToLayer("UI"));
             screenCamera.cullingMask = screenCamera.cullingMask | (1 << _uiPlayerNameplateLayer);
 
-            MelonLogger.Log("New Culling Mask: " + screenCamera.cullingMask);
+            MelonLogger.Msg("New Culling Mask: " + screenCamera.cullingMask);
             _newCullingMask = screenCamera.cullingMask;
 
             _menuCameraClone = new GameObject();
@@ -98,7 +99,7 @@ namespace VRC_MenuOverrender
                 .Where(m => methodMatchRegex.IsMatch(m.Name))
                 .ToList().ForEach(m => harmonyInstance.Patch(m, prefix: new HarmonyMethod(typeof(MenuOverrenderMod).GetMethod("OnRebuild", BindingFlags.NonPublic | BindingFlags.Static))));
 
-            OnModSettingsApplied();
+            ReadPreferences();
         }
 
         public override void OnUpdate()
@@ -115,9 +116,19 @@ namespace VRC_MenuOverrender
             }
         }
 
-        public override void OnModSettingsApplied()
+        public override void OnPreferencesLoaded()
         {
-            _overrenderEnabled = MelonPrefs.GetBool("MenuOverrender", nameof(_overrenderEnabled));
+            ReadPreferences();
+        }
+
+        public override void OnPreferencesSaved()
+        {
+            ReadPreferences();
+        }
+
+        public void ReadPreferences()
+        {
+            _overrenderEnabled = MelonPreferences.GetEntryValue<bool>("MenuOverrender", nameof(_overrenderEnabled));
 
             _menuCameraClone.SetActive(_overrenderEnabled);
             _originalCamera.cullingMask = (_overrenderEnabled ? _newCullingMask : _originalCullingMask);
